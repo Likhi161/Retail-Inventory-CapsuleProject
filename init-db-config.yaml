@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-db-config
+data:
+  init-db.sql: |
+    CREATE DATABASE IF NOT EXISTS capsule_db;
+    USE capsule_db;
+
+    CREATE USER IF NOT EXISTS 'capsule_user'@'%' IDENTIFIED BY 'secure_password_123';
+    GRANT ALL PRIVILEGES ON capsule_db.* TO 'capsule_user'@'%';
+    FLUSH PRIVILEGES;
+
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(50) NOT NULL UNIQUE,
+      email VARCHAR(100),
+      password VARCHAR(255) NOT NULL,
+      role VARCHAR(20) DEFAULT 'user',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      last_login TIMESTAMP NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS inventory (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(100),
+      quantity INT,
+      price DECIMAL(10,2),
+      category VARCHAR(50),
+      supplier VARCHAR(100),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS user_activity (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      activity_type VARCHAR(50),
+      activity_description TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS inventory_logs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      inventory_id INT,
+      action_type VARCHAR(20),
+      old_quantity INT,
+      new_quantity INT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    INSERT IGNORE INTO users (username, email, password, role) VALUES 
+    ('admin', 'admin@retaildashboard.com', 'admin123', 'admin');
