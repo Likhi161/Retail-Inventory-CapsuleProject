@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: init-db-config
+  namespace: retail-ns
 data:
   init-db.sql: |
     CREATE DATABASE IF NOT EXISTS capsule_db;
