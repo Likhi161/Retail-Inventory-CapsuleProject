@@ -21,9 +21,10 @@ spec:
 
         - name: app-code
           hostPath:
-            path: /home/ubuntu/Retail-Inventory-CapsuleProject   # ⚠️ change if needed
+            path: /home/ubuntu/Retail-Inventory-CapsuleProject
 
       initContainers:
+
         - name: wait-for-db
           image: busybox
           command:
@@ -56,8 +57,16 @@ spec:
             - sh
             - -c
             - |
-              echo "Seeding sample data..."
+              echo "Waiting 5 seconds before seeding..."
+              sleep 5
+
+              echo "Installing dependencies..."
+              npm install
+
+              echo "Running seed script..."
               node setup-sample-data.js
+
+              echo "Seeding completed!"
           env:
             - name: DB_HOST
               value: mysql-service
