@@ -13,18 +13,29 @@ spec:
       labels:
         app: retail-backend
     spec:
-
       volumes:
         - name: sql-volume
           configMap:
             name: init-db-config
-
         - name: app-code
           hostPath:
             path: /home/ubuntu/Retail-Inventory-CapsuleProject
-
+        - name: log-volume
+          emptyDir: {}
       initContainers:
-
+        - name: log-sidecar
+          image: busybox
+          restartPolicy: Always
+          command:
+            - sh
+            - -c
+            - |
+              echo "Starting log sidecar..."
+              touch /logs/app.log
+              tail -F /logs/app.log
+          volumeMounts:
+            - name: log-volume
+              mountPath: /logs
         - name: wait-for-db
           image: busybox
           command:
@@ -37,7 +48,6 @@ spec:
                 sleep 2
               done
               echo "DB ready!"
-
         - name: init-db
           image: mysql:8
           command:
@@ -49,7 +59,6 @@ spec:
           volumeMounts:
             - name: sql-volume
               mountPath: /sql
-
         - name: seed-data
           image: node:18
           workingDir: /app
@@ -79,7 +88,6 @@ spec:
           volumeMounts:
             - name: app-code
               mountPath: /app
-
       containers:
         - name: backend
           image: likhithabhogyam/retail-inventory-app:latest
@@ -94,3 +102,15 @@ spec:
               value: secure_password_123
             - name: DB_NAME
               value: capsule_db
+          volumeMounts:
+            - name: log-volume
+              mountPath: /logs
+          command:
+            - sh
+            - -c
+            - |
+              echo "Starting backend..."
+              while true; do
+                echo "Backend running at $(date)" >> /logs/app.log
+                sleep 5
+              done
