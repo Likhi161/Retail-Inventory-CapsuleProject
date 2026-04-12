@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: retail-backend
+  namespace: retail-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: retail-backend
+  template:
+    metadata:
+      labels:
+        app: retail-backend
+    spec:
+
+      volumes:
+        - name: sql-volume
+          configMap:
+            name: init-db-config
+
+        - name: app-code
+          hostPath:
+            path: /home/ubuntu/Retail-Inventory-CapsuleProject
+
+      initContainers:
+
+        - name: wait-for-db
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for MySQL..."
+              until nc -z mysql-service 3306; do
+                echo "DB not ready..."
+                sleep 2
+              done
+              echo "DB ready!"
+
+        - name: init-db
+          image: mysql:8
+          command:
+            - sh
+            - -c
+            - |
+              echo "Running DB script..."
+              mysql -h mysql-service -u root -prootpassword < /sql/init-db.sql
+          volumeMounts:
+            - name: sql-volume
+              mountPath: /sql
+
+        - name: seed-data
+          image: node:18
+          workingDir: /app
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting 5 seconds before seeding..."
+              sleep 5
+
+              echo "Installing dependencies..."
+              npm install
+
+              echo "Running seed script..."
+              node setup-sample-data.js
+
+              echo "Seeding completed!"
+          env:
+            - name: DB_HOST
+              value: mysql-service
+            - name: DB_USER
+              value: capsule_user
+            - name: DB_PASSWORD
+              value: secure_password_123
+            - name: DB_NAME
+              value: capsule_db
+          volumeMounts:
+            - name: app-code
+              mountPath: /app
+
+      containers:
+        - name: backend
+          image: likhithabhogyam/retail-inventory-app:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DB_HOST
+              value: mysql-service
+            - name: DB_USER
+              value: capsule_user
+            - name: DB_PASSWORD
+              value: secure_password_123
+            - name: DB_NAME
+              value: capsule_db
